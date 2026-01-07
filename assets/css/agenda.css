@@ -1,0 +1,38 @@
+.beauty-agenda {
+    background: #0f0f14;
+    padding: 20px;
+    border-radius: 18px;
+    color: #fff;
+}
+
+.agenda-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+#agenda-new {
+    background: #ff2f92;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 20px;
+    color: #fff;
+}
+
+.agenda-item {
+    background: #181820;
+    padding: 12px;
+    border-radius: 14px;
+    margin-bottom: 8px;
+}
+
+.agenda-item.confirmado { border-left: 4px solid #00ff88; }
+.agenda-item.cancelado { border-left: 4px solid red; }
+.agenda-item.faltou    { border-left: 4px solid #999; }
+
+@media(max-width:768px){
+    .agenda-item {
+        flex-direction: column;
+        gap: 5px;
+    }
+}

@@ -1,0 +1,81 @@
+.beauty-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.beauty-box {
+    background: #0f0f14;
+    padding: 25px;
+    border-radius: 20px;
+    color: #fff;
+    width: 320px;
+}
+
+.beauty-box h3 {
+    margin-top: 0;
+    color: #ff2f92;
+}
+
+.beauty-box input,
+.beauty-box select {
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 10px;
+    border-radius: 12px;
+    border: none;
+}
+
+.beauty-box button {
+    width: 100%;
+    padding: 12px;
+    background: #ff2f92;
+    border: none;
+    border-radius: 20px;
+    color: #fff;
+}
+
+.beauty-agenda {
+    background:#000;
+    padding:20px;
+    border-radius:20px;
+    color:#fff;
+}
+
+.beauty-agenda input,
+.beauty-agenda button {
+    padding:10px;
+    border-radius:12px;
+    border:none;
+}
+
+#agenda-add {
+    background:#ff2f92;
+    color:#fff;
+    margin-left:10px;
+}
+
+.agenda-item {
+    background:#111;
+    padding:12px;
+    border-radius:12px;
+    margin-top:10px;
+    display:flex;
+    justify-content:space-between;
+    flex-wrap:wrap;
+}
+
+.agenda-item.confirmado { border-left:4px solid #00ff88; }
+.agenda-item.cancelado { border-left:4px solid red; }
+.agenda-item.faltou { border-left:4px solid #999; }
+
+@media(max-width:768px){
+    .agenda-item {
+        flex-direction:column;
+        gap:5px;
+    }
+}

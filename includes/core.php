@@ -43,12 +43,6 @@ class Beauty_Core {
     }
 
     public function enqueue_assets() {
-        // Disponibiliza URL do AJAX para scripts
-        wp_localize_script('jquery', 'beautyAjax', [
-            'ajaxurl' => admin_url('admin-ajax.php'),
-            'nonce'   => wp_create_nonce('beauty_nonce'),
-        ]);
-
         // Carrega apenas no admin ou no modo de visualização do Elementor
         if (
             is_admin() ||
@@ -79,6 +73,12 @@ class Beauty_Core {
                 true
             );
 
+            // Localize em um handle próprio (ex.: beauty-app)
+            wp_localize_script('beauty-app', 'beautyAjax', [
+                'ajaxurl' => admin_url('admin-ajax.php'),
+                'nonce'   => wp_create_nonce('beauty_nonce'),
+            ]);
+
             // Estilos
             wp_register_style(
                 'beauty-messages-editor',
@@ -94,8 +94,9 @@ class Beauty_Core {
                 '1.0'
             );
 
-            // Executa os enqueues apenas se Elementor estiver no modo preview/admin
+            // Enfileira os scripts e estilos necessários
             wp_enqueue_script('beauty-messages-editor');
+            wp_enqueue_script('beauty-app');
             wp_enqueue_style('beauty-messages-editor');
         }
     }

@@ -17,8 +17,14 @@ require_once BEAUTY_SAAS_PATH . 'includes/functions/log.php';
 
 register_activation_hook(__FILE__, ['Beauty_Activate', 'run']);
 
-add_action('plugins_loaded', function () {
-    if (!did_action('elementor/loaded')) return;
-
+// Carrega o core do plugin. Antes estava dentro de plugins_loaded com um did_action('elementor/loaded')
+// que poderia impedir o carregamento caso o hook do Elementor ainda não tivesse sido disparado.
+if ( did_action( 'elementor/loaded' ) ) {
+    // Se Elementor já estiver carregado, incluir imediatamente
     require_once BEAUTY_SAAS_PATH . 'includes/core.php';
-});
+} else {
+    // Se não, aguarda o carregamento do Elementor para incluir o core
+    add_action('elementor/loaded', function () {
+        require_once BEAUTY_SAAS_PATH . 'includes/core.php';
+    });
+}

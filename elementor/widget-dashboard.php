@@ -11,7 +11,8 @@ class Beauty_Widget_Dashboard extends Widget_Base {
     public function get_icon() { return 'eicon-dashboard'; }
     public function get_categories() { return ['general']; }
 
-    protected function _register_controls() {
+    // Antes: _register_controls() -> corrigido para register_controls()
+    protected function register_controls() {
 
         $this->start_controls_section('content', [
             'label' => 'Conteúdo'

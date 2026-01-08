@@ -31,7 +31,8 @@ class Beauty_Elementor {
 
         foreach ($widgets as $class) {
             if (class_exists($class)) {
-                ElementorPlugin::instance()->widgets_manager->register_widget_type(new $class());
+                // API atual do Elementor
+                ElementorPlugin::instance()->widgets_manager->register( new $class() );
             }
         }
     }

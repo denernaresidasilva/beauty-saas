@@ -24,6 +24,7 @@ class Beauty_Core {
 
         require_once $base . 'db.php';
         require_once $base . 'company.php';
+        require_once $base . 'security.php';
         require_once $base . 'security-permissions.php';
         require_once $base . 'auth.php';
         require_once $base . 'clients.php';

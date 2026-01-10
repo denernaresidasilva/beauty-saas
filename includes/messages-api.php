@@ -3,6 +3,12 @@ if (!defined('ABSPATH')) exit;
 
 // Lista mensagens
 add_action('wp_ajax_beauty_list_messages', function () {
+    if (!check_ajax_referer('beauty_nonce', 'nonce', false)) {
+        wp_send_json_error('Nonce inválido.');
+    }
+
+    Beauty_Permissions::company_only();
+
     global $wpdb;
     $company_id = Beauty_Company::get_company_id();
 
@@ -20,6 +26,12 @@ add_action('wp_ajax_beauty_list_messages', function () {
 
 // Retorna conteúdo de uma mensagem
 add_action('wp_ajax_beauty_get_message', function () {
+    if (!check_ajax_referer('beauty_nonce', 'nonce', false)) {
+        wp_send_json_error('Nonce inválido.');
+    }
+
+    Beauty_Permissions::company_only();
+
     global $wpdb;
     $slug = sanitize_text_field($_POST['slug'] ?? '');
 
@@ -37,6 +49,12 @@ add_action('wp_ajax_beauty_get_message', function () {
 
 // Salva mensagem
 add_action('wp_ajax_beauty_save_message', function () {
+    if (!check_ajax_referer('beauty_nonce', 'nonce', false)) {
+        wp_send_json_error('Nonce inválido.');
+    }
+
+    Beauty_Permissions::company_only();
+
     global $wpdb;
 
     $slug    = sanitize_text_field($_POST['slug'] ?? '');

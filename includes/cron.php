@@ -6,6 +6,9 @@ class Beauty_Cron {
     public function __construct() {
         // Hook manual (botão de teste)
         add_action('beauty_cron_run', [$this, 'run']);
+
+        // Intervalo personalizado
+        add_filter('cron_schedules', [$this, 'register_schedules']);
     }
 
     /**
@@ -15,6 +18,21 @@ class Beauty_Cron {
         $this->birthday();
         $this->reminders();
         $this->followups();
+        $this->process_automation_queue();
+    }
+
+    /**
+     * Intervalo para o cron interno
+     */
+    public function register_schedules($schedules) {
+        if (!isset($schedules['beauty_five_minutes'])) {
+            $schedules['beauty_five_minutes'] = [
+                'interval' => 5 * MINUTE_IN_SECONDS,
+                'display'  => __('Beauty - A cada 5 minutos', 'beauty-saas'),
+            ];
+        }
+
+        return $schedules;
     }
 
     /**
@@ -141,6 +159,47 @@ class Beauty_Cron {
                     "Follow-up enviado para {$r->client_name} | Agendamento #{$r->id}"
                 );
             }
+        }
+    }
+
+    /**
+     * ⏳ Processa fila de automações com delay
+     */
+    private function process_automation_queue() {
+        global $wpdb;
+
+        $rows = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT id, message_id, payload
+                 FROM {$wpdb->prefix}beauty_automation_queue
+                 WHERE sent_at IS NULL
+                 AND send_at <= %s
+                 ORDER BY send_at ASC
+                 LIMIT 50",
+                current_time('mysql')
+            )
+        );
+
+        foreach ($rows as $row) {
+            $payload = [];
+            if (!empty($row->payload)) {
+                $decoded = json_decode($row->payload, true);
+                if (is_array($decoded)) {
+                    $payload = $decoded;
+                }
+            }
+
+            if (function_exists('beauty_send_message')) {
+                beauty_send_message($row->message_id, $payload);
+            } else {
+                do_action('beauty_send_message', $row->message_id, $payload);
+            }
+
+            $wpdb->update(
+                "{$wpdb->prefix}beauty_automation_queue",
+                ['sent_at' => current_time('mysql')],
+                ['id' => $row->id]
+            );
         }
     }
 }

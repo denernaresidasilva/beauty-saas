@@ -55,6 +55,45 @@ class Beauty_Finalize {
             ]
         );
 
+        // Cria lançamento no plano de contas (ledger)
+        $category_name = 'Receita de Serviços';
+        $category_id = (int) $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT id FROM {$wpdb->prefix}beauty_financial_categories
+                 WHERE company_id = %d AND type = 'receita' AND name = %s",
+                $company_id,
+                $category_name
+            )
+        );
+
+        if (!$category_id) {
+            $wpdb->insert(
+                "{$wpdb->prefix}beauty_financial_categories",
+                [
+                    'company_id' => $company_id,
+                    'name'       => $category_name,
+                    'type'       => 'receita',
+                ]
+            );
+            $category_id = (int) $wpdb->insert_id;
+        }
+
+        $entry_date = date('Y-m-d', strtotime($appointment->end_time ?: 'now'));
+
+        $wpdb->insert(
+            "{$wpdb->prefix}beauty_financial_ledger",
+            [
+                'company_id'    => $company_id,
+                'category_id'   => $category_id ?: null,
+                'reference_type'=> 'appointment',
+                'reference_id'  => $appointment_id,
+                'description'   => "Serviço finalizado #{$appointment_id}",
+                'entry_type'    => 'receita',
+                'amount'        => $amount,
+                'entry_date'    => $entry_date,
+            ]
+        );
+
         // ✅ Log
         beauty_log('agendamento_finalizado', "Agendamento #$appointment_id | Valor R$ $amount");
 

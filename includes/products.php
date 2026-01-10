@@ -13,6 +13,10 @@ class Beauty_Products {
      * Lista produtos da empresa
      */
     public function get_products() {
+        if (!check_ajax_referer('beauty_nonce', 'nonce', false)) {
+            wp_send_json_error('Nonce inválido.');
+        }
+
         Beauty_Permissions::company_only(); // ✅ Proteção aplicada
 
         global $wpdb;
@@ -34,6 +38,10 @@ class Beauty_Products {
      * Cria ou atualiza produto
      */
     public function save_product() {
+        if (!check_ajax_referer('beauty_nonce', 'nonce', false)) {
+            wp_send_json_error('Nonce inválido.');
+        }
+
         Beauty_Permissions::company_only(); // ✅ Proteção aplicada
 
         global $wpdb;
@@ -78,6 +86,10 @@ class Beauty_Products {
      * Exclui produto
      */
     public function delete_product() {
+        if (!check_ajax_referer('beauty_nonce', 'nonce', false)) {
+            wp_send_json_error('Nonce inválido.');
+        }
+
         Beauty_Permissions::company_only(); // ✅ Proteção aplicada
 
         global $wpdb;

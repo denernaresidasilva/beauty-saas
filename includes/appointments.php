@@ -13,6 +13,10 @@ class Beauty_Appointments {
      * Criação de novo agendamento
      */
     public function create() {
+        if (!check_ajax_referer('beauty_nonce', 'nonce', false)) {
+            wp_send_json_error('Nonce inválido.');
+        }
+
         Beauty_Permissions::company_only(); // 🔒 Apenas empresa
 
         global $wpdb;
@@ -89,6 +93,10 @@ class Beauty_Appointments {
      * Cancelar agendamento
      */
     public function cancel() {
+        if (!check_ajax_referer('beauty_nonce', 'nonce', false)) {
+            wp_send_json_error('Nonce inválido.');
+        }
+
         Beauty_Permissions::company_only(); // 🔒 Apenas empresa
 
         global $wpdb;
@@ -120,7 +128,15 @@ class Beauty_Appointments {
      * Lista agendamentos (empresa ou profissional)
      */
     public function list() {
-        Beauty_Permissions::professional_or_company();
+        if (!check_ajax_referer('beauty_nonce', 'nonce', false)) {
+            wp_send_json_error('Nonce inválido.');
+        }
+
+        if (Beauty_Permissions::is_company()) {
+            Beauty_Permissions::company_only();
+        } else {
+            Beauty_Permissions::professional_only();
+        }
 
         global $wpdb;
 

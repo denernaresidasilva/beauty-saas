@@ -4,6 +4,7 @@ jQuery(function ($) {
 
         $.post(beautyAjax.ajaxurl, {
             action: 'beauty_load_agenda',
+            nonce: beautyAjax.nonce,
             date: $('#agenda-date').val()
         }, function (rows) {
             if (!rows.length) {
@@ -39,6 +40,7 @@ jQuery(function ($) {
 
         $.post(beautyAjax.ajaxurl, {
             action: 'beauty_add_appointment',
+            nonce: beautyAjax.nonce,
             client: client,
             service: service,
             start: date + ' ' + time + ':00',

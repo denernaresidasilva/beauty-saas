@@ -14,6 +14,10 @@ class Beauty_Services {
      * Lista serviços da empresa
      */
     public function get_services() {
+        if (!check_ajax_referer('beauty_nonce', 'nonce', false)) {
+            wp_send_json_error('Nonce inválido.');
+        }
+
         Beauty_Permissions::company_only();
 
         global $wpdb;
@@ -35,6 +39,10 @@ class Beauty_Services {
      * Cria ou atualiza serviço
      */
     public function save_service() {
+        if (!check_ajax_referer('beauty_nonce', 'nonce', false)) {
+            wp_send_json_error('Nonce inválido.');
+        }
+
         Beauty_Permissions::company_only();
 
         global $wpdb;
@@ -85,6 +93,10 @@ class Beauty_Services {
      * Remove serviço
      */
     public function delete_service() {
+        if (!check_ajax_referer('beauty_nonce', 'nonce', false)) {
+            wp_send_json_error('Nonce inválido.');
+        }
+
         Beauty_Permissions::company_only();
 
         global $wpdb;
@@ -118,6 +130,10 @@ class Beauty_Services {
      * Vínculo profissional x serviço
      */
     public function assign_professional() {
+        if (!check_ajax_referer('beauty_nonce', 'nonce', false)) {
+            wp_send_json_error('Nonce inválido.');
+        }
+
         Beauty_Permissions::company_only();
 
         global $wpdb;

@@ -7,7 +7,7 @@ class Beauty_Activate {
 
         // Instala / atualiza banco de dados
         if (class_exists('Beauty_DB')) {
-            Beauty_DB::install();
+            Beauty_DB::maybe_upgrade(BEAUTY_SAAS_VERSION);
         }
 
         // Cria roles do sistema

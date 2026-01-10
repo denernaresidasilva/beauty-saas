@@ -4,7 +4,7 @@ if (!defined('ABSPATH')) exit;
 class Beauty_Core {
 
     public function __construct() {
-        add_action('plugins_loaded', [$this, 'init']);
+        add_action('init', [$this, 'init']);
         add_action('admin_enqueue_scripts', [$this, 'enqueue_assets']);
         add_action('wp_enqueue_scripts', [$this, 'enqueue_assets']);
         add_action('admin_menu', [$this, 'register_admin_pages']);

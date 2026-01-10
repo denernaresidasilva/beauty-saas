@@ -24,8 +24,6 @@ add_action('plugins_loaded', function () {
     }
 });
 
-add_action('plugins_loaded', function () {
-    if (!did_action('elementor/loaded')) return;
-
+add_action('elementor/loaded', function () {
     require_once BEAUTY_SAAS_PATH . 'includes/core.php';
 });

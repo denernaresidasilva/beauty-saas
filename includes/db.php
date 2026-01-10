@@ -153,6 +153,23 @@ class Beauty_DB {
         ) $charset;");
 
         /**
+         * FILA DE AUTOMAÇÕES (DELAY)
+         */
+        dbDelta("CREATE TABLE {$wpdb->prefix}beauty_automation_queue (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            company_id BIGINT UNSIGNED NOT NULL,
+            automation_id BIGINT UNSIGNED NOT NULL,
+            message_id BIGINT UNSIGNED NOT NULL,
+            payload LONGTEXT NULL,
+            send_at DATETIME NOT NULL,
+            sent_at DATETIME NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            KEY company_id (company_id),
+            KEY automation_id (automation_id),
+            KEY send_at (send_at)
+        ) $charset;");
+
+        /**
          * SESSÕES (LOGIN TOKEN)
          */
         dbDelta("CREATE TABLE {$wpdb->prefix}beauty_sessions (

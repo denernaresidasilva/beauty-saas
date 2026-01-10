@@ -8,6 +8,9 @@ $views = [
     'clientes'   => 'panel/clientes.php',
     'servicos'   => 'panel/servicos.php',
     'mensagens'  => 'panel/mensagens.php',
+    'dre'        => 'panel/dre.php',
+    'fluxo-caixa'=> 'panel/fluxo-caixa.php',
+    'comissoes'  => 'panel/comissoes.php',
     // ... adicione outras views aqui
 ];
 

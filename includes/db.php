@@ -124,6 +124,85 @@ class Beauty_DB {
         ) $charset;");
 
         /**
+         * CATEGORIAS FINANCEIRAS (PLANO DE CONTAS)
+         */
+        dbDelta("CREATE TABLE {$wpdb->prefix}beauty_financial_categories (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            company_id BIGINT UNSIGNED NOT NULL,
+            name VARCHAR(150) NOT NULL,
+            type ENUM('receita','despesa') NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            KEY company_id (company_id),
+            KEY type (type)
+        ) $charset;");
+
+        /**
+         * CENTROS DE CUSTO
+         */
+        dbDelta("CREATE TABLE {$wpdb->prefix}beauty_cost_centers (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            company_id BIGINT UNSIGNED NOT NULL,
+            name VARCHAR(150) NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            KEY company_id (company_id)
+        ) $charset;");
+
+        /**
+         * CONTAS A PAGAR
+         */
+        dbDelta("CREATE TABLE {$wpdb->prefix}beauty_accounts_payable (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            company_id BIGINT UNSIGNED NOT NULL,
+            category_id BIGINT UNSIGNED NULL,
+            cost_center_id BIGINT UNSIGNED NULL,
+            description TEXT,
+            amount DECIMAL(10,2) NOT NULL,
+            due_date DATE NOT NULL,
+            paid_at DATE NULL,
+            status ENUM('aberto','pago','cancelado') DEFAULT 'aberto',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            KEY company_id (company_id),
+            KEY due_date (due_date)
+        ) $charset;");
+
+        /**
+         * CONTAS A RECEBER
+         */
+        dbDelta("CREATE TABLE {$wpdb->prefix}beauty_accounts_receivable (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            company_id BIGINT UNSIGNED NOT NULL,
+            category_id BIGINT UNSIGNED NULL,
+            cost_center_id BIGINT UNSIGNED NULL,
+            description TEXT,
+            amount DECIMAL(10,2) NOT NULL,
+            due_date DATE NOT NULL,
+            received_at DATE NULL,
+            status ENUM('aberto','recebido','cancelado') DEFAULT 'aberto',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            KEY company_id (company_id),
+            KEY due_date (due_date)
+        ) $charset;");
+
+        /**
+         * EXTRATO / LEDGER
+         */
+        dbDelta("CREATE TABLE {$wpdb->prefix}beauty_financial_ledger (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            company_id BIGINT UNSIGNED NOT NULL,
+            category_id BIGINT UNSIGNED NULL,
+            cost_center_id BIGINT UNSIGNED NULL,
+            reference_type VARCHAR(50) NULL,
+            reference_id BIGINT UNSIGNED NULL,
+            description TEXT,
+            entry_type ENUM('receita','despesa') NOT NULL,
+            amount DECIMAL(10,2) NOT NULL,
+            entry_date DATE NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            KEY company_id (company_id),
+            KEY entry_date (entry_date)
+        ) $charset;");
+
+        /**
          * MENSAGENS
          */
         dbDelta("CREATE TABLE {$wpdb->prefix}beauty_messages (

@@ -25,6 +25,7 @@ class Beauty_Activate {
         // Remove se já existir (evita conflito)
         remove_role('beauty_company');
         remove_role('beauty_professional');
+        remove_role('beauty_accountant');
 
         add_role(
             'beauty_company',
@@ -37,6 +38,14 @@ class Beauty_Activate {
         add_role(
             'beauty_professional',
             'Profissional Beauty',
+            [
+                'read' => true
+            ]
+        );
+
+        add_role(
+            'beauty_accountant',
+            'Contador Beauty',
             [
                 'read' => true
             ]

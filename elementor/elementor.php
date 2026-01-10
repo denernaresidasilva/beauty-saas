@@ -17,6 +17,7 @@ class Beauty_Elementor {
         require_once $base . 'widget-agenda.php';
         require_once $base . 'widget-automacoes.php';
         require_once $base . 'widget-financeiro.php';
+        require_once $base . 'widget-erp.php';
         require_once $base . 'widget-funcionario.php';
         require_once $base . 'widget-messages-editor.php';
 
@@ -25,6 +26,7 @@ class Beauty_Elementor {
             'Beauty_Widget_Agenda',
             'Beauty_Widget_Automacoes',
             'Beauty_Widget_Financeiro',
+            'Beauty_Widget_ERP',
             'Beauty_Widget_Funcionario',
             'Beauty_Widget_Messages_Editor',
         ];

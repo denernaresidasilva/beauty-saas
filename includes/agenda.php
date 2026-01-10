@@ -78,22 +78,37 @@ class Beauty_Agenda {
         $start_time = date('Y-m-d H:i:s', strtotime("$date $time"));
         $end_time   = date('Y-m-d H:i:s', strtotime("+{$service->duration} minutes", strtotime($start_time)));
 
+        $conflict_statuses = apply_filters(
+            'beauty_appointment_conflict_statuses',
+            ['confirmado', 'pendente'],
+            $company_id,
+            $professional_id
+        );
+
+        if (!is_array($conflict_statuses)) {
+            $conflict_statuses = ['confirmado', 'pendente'];
+        }
+
+        $conflict_statuses = array_values(array_filter(array_map('sanitize_text_field', $conflict_statuses)));
+
         // Verifica conflito
-        $conflict = $wpdb->get_var(
-            $wpdb->prepare(
+        $conflict = 0;
+        if (!empty($conflict_statuses)) {
+            $placeholders = implode(',', array_fill(0, count($conflict_statuses), '%s'));
+            $conflict_sql = $wpdb->prepare(
                 "SELECT COUNT(*) FROM {$wpdb->prefix}beauty_appointments
                  WHERE company_id=%d
                  AND professional_id=%d
-                 AND status IN ('confirmado','pendente')
-                 AND (
-                    (start_time < %s AND end_time > %s)
-                 )",
-                $company_id,
-                $professional_id,
-                $end_time,
-                $start_time
-            )
-        );
+                 AND status IN ($placeholders)
+                 AND (start_time < %s AND end_time > %s)",
+                array_merge(
+                    [$company_id, $professional_id],
+                    $conflict_statuses,
+                    [$end_time, $start_time]
+                )
+            );
+            $conflict = $wpdb->get_var($conflict_sql);
+        }
 
         if ($conflict > 0) {
             wp_send_json_error('Horário indisponível');

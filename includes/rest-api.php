@@ -1,181 +1,126 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-function beauty_financial_company_id() {
-    $company_id = Beauty_Company::get_company_id();
+class Beauty_Automations {
 
-    if ($company_id) {
-        return $company_id;
+    public function __construct() {
+
+        // CRUD
+        add_action('wp_ajax_beauty_get_automations', [$this, 'get']);
+        add_action('wp_ajax_beauty_save_automation', [$this, 'save']);
+        add_action('wp_ajax_beauty_delete_automation', [$this, 'delete']);
+
+        // Engine
+        add_action('beauty_run_automations', [$this, 'run'], 10, 2);
     }
 
-    if (Beauty_Permissions::is_accountant()) {
-        return (int) get_user_meta(get_current_user_id(), 'beauty_company_id', true);
+    /**
+     * Lista automações
+     */
+    public function get() {
+        global $wpdb;
+
+        $company_id = Beauty_Company::get_company_id();
+
+        $rows = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT a.*, m.slug AS message_slug
+                 FROM {$wpdb->prefix}beauty_automations a
+                 LEFT JOIN {$wpdb->prefix}beauty_messages m ON m.id = a.message_id
+                 WHERE a.company_id = %d
+                 ORDER BY a.id DESC",
+                $company_id
+            )
+        );
+
+        wp_send_json_success($rows);
     }
 
-    return 0;
-}
+    /**
+     * Cria ou atualiza automação
+     */
+    public function save() {
+        global $wpdb;
 
-add_action('rest_api_init', function () {
+        $company_id = Beauty_Company::get_company_id();
 
-    register_rest_route('beauty/v1', '/appointments', [
-        'methods' => 'GET',
-        'permission_callback' => function () {
-            return Beauty_Company::is_owner();
-        },
-        'callback' => function () {
-            global $wpdb;
-            return $wpdb->get_results(
-                "SELECT * FROM {$wpdb->prefix}beauty_appointments"
+        $id         = intval($_POST['id'] ?? 0);
+        $event      = sanitize_text_field($_POST['event']);
+        $message_id = intval($_POST['message_id']);
+        $delay_days = intval($_POST['delay_days'] ?? 0);
+        $active     = isset($_POST['active']) ? 1 : 0;
+
+        if (!$event || !$message_id) {
+            wp_send_json_error('Dados inválidos');
+        }
+
+        $data = [
+            'company_id' => $company_id,
+            'event'      => $event,
+            'message_id' => $message_id,
+            'delay_days' => $delay_days,
+            'active'     => $active
+        ];
+
+        if ($id > 0) {
+            $wpdb->update(
+                "{$wpdb->prefix}beauty_automations",
+                $data,
+                ['id' => $id, 'company_id' => $company_id]
             );
+        } else {
+            $wpdb->insert(
+                "{$wpdb->prefix}beauty_automations",
+                $data
+            );
+            $id = $wpdb->insert_id;
         }
-    ]);
 
-    register_rest_route('beauty/v1', '/reports/dre', [
-        'methods' => 'GET',
-        'permission_callback' => function () {
-            return Beauty_Permissions::is_company() || Beauty_Permissions::is_accountant();
-        },
-        'callback' => function (WP_REST_Request $request) {
-            global $wpdb;
+        wp_send_json_success(['id' => $id]);
+    }
 
-            $company_id = beauty_financial_company_id();
-            if (!$company_id) {
-                return new WP_Error('forbidden', 'Permissão insuficiente.', ['status' => 403]);
-            }
+    /**
+     * Remove automação
+     */
+    public function delete() {
+        global $wpdb;
 
-            $start = sanitize_text_field($request->get_param('start'));
-            $end = sanitize_text_field($request->get_param('end'));
+        $company_id = Beauty_Company::get_company_id();
+        $id = intval($_POST['id']);
 
-            $where = "WHERE l.company_id = %d";
-            $params = [$company_id];
+        $wpdb->delete(
+            "{$wpdb->prefix}beauty_automations",
+            [
+                'id' => $id,
+                'company_id' => $company_id
+            ]
+        );
 
-            if ($start) {
-                $where .= " AND l.entry_date >= %s";
-                $params[] = $start;
-            }
+        wp_send_json_success();
+    }
 
-            if ($end) {
-                $where .= " AND l.entry_date <= %s";
-                $params[] = $end;
-            }
+    /**
+     * Engine de execução das automações
+     */
+    public function run($event, $context = []) {
+        global $wpdb;
 
-            $sql = "
-                SELECT c.name, l.entry_type, SUM(l.amount) as total
-                FROM {$wpdb->prefix}beauty_financial_ledger l
-                LEFT JOIN {$wpdb->prefix}beauty_financial_categories c ON c.id = l.category_id
-                $where
-                GROUP BY c.name, l.entry_type
-            ";
+        $company_id = $context['company_id'] ?? 0;
 
-            $rows = $wpdb->get_results($wpdb->prepare($sql, ...$params));
+        if (!$company_id) return;
 
-            $totals = [
-                'receitas' => 0,
-                'despesas' => 0,
-                'resultado' => 0,
-            ];
+        $automations = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT * FROM {$wpdb->prefix}beauty_automations
+                 WHERE company_id=%d
+                 AND event=%s
+                 AND active=1",
+                $company_id,
+                $event
+            )
+        );
 
-            foreach ($rows as $row) {
-                if ($row->entry_type === 'receita') {
-                    $totals['receitas'] += (float) $row->total;
-                } else {
-                    $totals['despesas'] += (float) $row->total;
-                }
-            }
+        foreach ($automations as $automation) {
 
-            $totals['resultado'] = $totals['receitas'] - $totals['despesas'];
-
-            return [
-                'detalhes' => $rows,
-                'totais' => $totals,
-            ];
-        }
-    ]);
-
-    register_rest_route('beauty/v1', '/reports/fluxo-caixa', [
-        'methods' => 'GET',
-        'permission_callback' => function () {
-            return Beauty_Permissions::is_company() || Beauty_Permissions::is_accountant();
-        },
-        'callback' => function (WP_REST_Request $request) {
-            global $wpdb;
-
-            $company_id = beauty_financial_company_id();
-            if (!$company_id) {
-                return new WP_Error('forbidden', 'Permissão insuficiente.', ['status' => 403]);
-            }
-
-            $start = sanitize_text_field($request->get_param('start'));
-            $end = sanitize_text_field($request->get_param('end'));
-
-            $where = "WHERE l.company_id = %d";
-            $params = [$company_id];
-
-            if ($start) {
-                $where .= " AND l.entry_date >= %s";
-                $params[] = $start;
-            }
-
-            if ($end) {
-                $where .= " AND l.entry_date <= %s";
-                $params[] = $end;
-            }
-
-            $sql = "
-                SELECT l.entry_date,
-                    SUM(CASE WHEN l.entry_type = 'receita' THEN l.amount ELSE 0 END) as entradas,
-                    SUM(CASE WHEN l.entry_type = 'despesa' THEN l.amount ELSE 0 END) as saidas
-                FROM {$wpdb->prefix}beauty_financial_ledger l
-                $where
-                GROUP BY l.entry_date
-                ORDER BY l.entry_date ASC
-            ";
-
-            return $wpdb->get_results($wpdb->prepare($sql, ...$params));
-        }
-    ]);
-
-    register_rest_route('beauty/v1', '/reports/comissoes', [
-        'methods' => 'GET',
-        'permission_callback' => function () {
-            return Beauty_Permissions::is_company() || Beauty_Permissions::is_accountant();
-        },
-        'callback' => function (WP_REST_Request $request) {
-            global $wpdb;
-
-            $company_id = beauty_financial_company_id();
-            if (!$company_id) {
-                return new WP_Error('forbidden', 'Permissão insuficiente.', ['status' => 403]);
-            }
-
-            $start = sanitize_text_field($request->get_param('start'));
-            $end = sanitize_text_field($request->get_param('end'));
-
-            $where = "WHERE f.company_id = %d";
-            $params = [$company_id];
-
-            if ($start) {
-                $where .= " AND DATE(f.created_at) >= %s";
-                $params[] = $start;
-            }
-
-            if ($end) {
-                $where .= " AND DATE(f.created_at) <= %s";
-                $params[] = $end;
-            }
-
-            $sql = "
-                SELECT p.id, p.name, p.commission,
-                    SUM(f.amount) as total_vendas,
-                    SUM(f.amount * (p.commission / 100)) as total_comissao
-                FROM {$wpdb->prefix}beauty_financial f
-                INNER JOIN {$wpdb->prefix}beauty_professionals p ON p.id = f.professional_id
-                $where
-                GROUP BY p.id, p.name, p.commission
-                ORDER BY p.name ASC
-            ";
-
-            return $wpdb->get_results($wpdb->prepare($sql, ...$params));
-        }
-    ]);
-});
+            // Delay (em dias)
+            if ($automation->delay_days > 0) {

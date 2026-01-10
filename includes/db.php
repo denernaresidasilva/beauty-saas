@@ -28,6 +28,7 @@ class Beauty_DB {
             company_id BIGINT UNSIGNED NOT NULL,
             name VARCHAR(150) NOT NULL,
             phone VARCHAR(50),
+            notes TEXT NULL,
             birthday DATE NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             KEY company_id (company_id)
@@ -232,6 +233,23 @@ class Beauty_DB {
         ) $charset;");
 
         /**
+         * FILA DE AUTOMAÇÕES (DELAY)
+         */
+        dbDelta("CREATE TABLE {$wpdb->prefix}beauty_automation_queue (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            company_id BIGINT UNSIGNED NOT NULL,
+            automation_id BIGINT UNSIGNED NOT NULL,
+            message_id BIGINT UNSIGNED NOT NULL,
+            payload LONGTEXT NULL,
+            send_at DATETIME NOT NULL,
+            sent_at DATETIME NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            KEY company_id (company_id),
+            KEY automation_id (automation_id),
+            KEY send_at (send_at)
+        ) $charset;");
+
+        /**
          * SESSÕES (LOGIN TOKEN)
          */
         dbDelta("CREATE TABLE {$wpdb->prefix}beauty_sessions (
@@ -256,5 +274,14 @@ class Beauty_DB {
             KEY user_id (user_id),
             KEY action (action)
         ) $charset;");
+    }
+
+    public static function maybe_upgrade($version) {
+        $installed_version = get_option('beauty_saas_db_version');
+
+        if ($installed_version !== $version) {
+            self::install();
+            update_option('beauty_saas_db_version', $version);
+        }
     }
 }

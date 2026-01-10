@@ -7,7 +7,7 @@ class Beauty_Activate {
 
         // Instala / atualiza banco de dados
         if (class_exists('Beauty_DB')) {
-            Beauty_DB::install();
+            Beauty_DB::maybe_upgrade(BEAUTY_SAAS_VERSION);
         }
 
         // Cria roles do sistema
@@ -15,6 +15,9 @@ class Beauty_Activate {
 
         // Cria páginas do app
         self::create_pages();
+
+        // Agenda o cron interno
+        self::schedule_cron();
     }
 
     /**
@@ -103,5 +106,27 @@ class Beauty_Activate {
                 }
             }
         }
+    }
+
+    /**
+     * Agenda execução periódica do cron interno
+     */
+    private static function schedule_cron() {
+        add_filter('cron_schedules', [__CLASS__, 'register_schedules']);
+
+        if (!wp_next_scheduled('beauty_cron_run')) {
+            wp_schedule_event(time() + 300, 'beauty_five_minutes', 'beauty_cron_run');
+        }
+    }
+
+    public static function register_schedules($schedules) {
+        if (!isset($schedules['beauty_five_minutes'])) {
+            $schedules['beauty_five_minutes'] = [
+                'interval' => 5 * MINUTE_IN_SECONDS,
+                'display'  => __('Beauty - A cada 5 minutos', 'beauty-saas'),
+            ];
+        }
+
+        return $schedules;
     }
 }

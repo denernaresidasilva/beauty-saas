@@ -16,7 +16,6 @@ class Beauty_AutomationEvents {
         if (!check_ajax_referer('beauty_nonce', 'nonce', false)) {
             wp_send_json_error('Nonce inválido.');
         }
-
         Beauty_Permissions::company_only();
 
         global $wpdb;
@@ -44,7 +43,6 @@ class Beauty_AutomationEvents {
         if (!check_ajax_referer('beauty_nonce', 'nonce', false)) {
             wp_send_json_error('Nonce inválido.');
         }
-
         Beauty_Permissions::company_only();
 
         global $wpdb;
@@ -98,7 +96,6 @@ class Beauty_AutomationEvents {
         if (!check_ajax_referer('beauty_nonce', 'nonce', false)) {
             wp_send_json_error('Nonce inválido.');
         }
-
         Beauty_Permissions::company_only();
 
         global $wpdb;

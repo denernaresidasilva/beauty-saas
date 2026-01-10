@@ -32,6 +32,41 @@ class Beauty_Appointments {
             wp_send_json_error('Dados incompletos');
         }
 
+        $conflict_statuses = apply_filters(
+            'beauty_appointment_conflict_statuses',
+            ['confirmado', 'pendente'],
+            $company_id,
+            $professional_id
+        );
+
+        if (!is_array($conflict_statuses)) {
+            $conflict_statuses = ['confirmado', 'pendente'];
+        }
+
+        $conflict_statuses = array_values(array_filter(array_map('sanitize_text_field', $conflict_statuses)));
+
+        if (!empty($conflict_statuses)) {
+            $placeholders = implode(',', array_fill(0, count($conflict_statuses), '%s'));
+            $conflict_sql = $wpdb->prepare(
+                "SELECT COUNT(*) FROM {$wpdb->prefix}beauty_appointments
+                 WHERE company_id = %d
+                 AND professional_id = %d
+                 AND status IN ($placeholders)
+                 AND (start_time < %s AND end_time > %s)",
+                array_merge(
+                    [$company_id, $professional_id],
+                    $conflict_statuses,
+                    [$end_time, $start_time]
+                )
+            );
+
+            $conflict = $wpdb->get_var($conflict_sql);
+
+            if ($conflict > 0) {
+                wp_send_json_error('Já existe um agendamento nesse horário para este profissional.');
+            }
+        }
+
         // Cria o agendamento já como confirmado
         $wpdb->insert(
             "{$wpdb->prefix}beauty_appointments",

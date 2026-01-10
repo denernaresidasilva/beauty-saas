@@ -18,12 +18,6 @@ class Beauty_Automations {
      * Lista automações
      */
     public function get() {
-        if (!check_ajax_referer('beauty_nonce', 'nonce', false)) {
-            wp_send_json_error('Nonce inválido.');
-        }
-
-        Beauty_Permissions::company_only();
-
         global $wpdb;
 
         $company_id = Beauty_Company::get_company_id();
@@ -46,12 +40,6 @@ class Beauty_Automations {
      * Cria ou atualiza automação
      */
     public function save() {
-        if (!check_ajax_referer('beauty_nonce', 'nonce', false)) {
-            wp_send_json_error('Nonce inválido.');
-        }
-
-        Beauty_Permissions::company_only();
-
         global $wpdb;
 
         $company_id = Beauty_Company::get_company_id();
@@ -95,12 +83,6 @@ class Beauty_Automations {
      * Remove automação
      */
     public function delete() {
-        if (!check_ajax_referer('beauty_nonce', 'nonce', false)) {
-            wp_send_json_error('Nonce inválido.');
-        }
-
-        Beauty_Permissions::company_only();
-
         global $wpdb;
 
         $company_id = Beauty_Company::get_company_id();
@@ -142,17 +124,3 @@ class Beauty_Automations {
 
             // Delay (em dias)
             if ($automation->delay_days > 0) {
-                // aqui futuramente entra cron / fila
-                continue;
-            }
-
-            do_action(
-                'beauty_send_message',
-                $automation->message_id,
-                $context
-            );
-        }
-    }
-}
-
-new Beauty_Automations();

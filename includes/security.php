@@ -18,15 +18,40 @@ class Beauty_Security {
             return;
         }
 
+        if ($this->should_allow_admin_request()) {
+            return;
+        }
+
         $user = wp_get_current_user();
 
+        $allowed_roles = apply_filters('beauty_security_admin_allowed_roles', ['administrator']);
+
         // Admin pode tudo (VOCÊ)
-        if (in_array('administrator', $user->roles)) {
+        if (array_intersect($allowed_roles, $user->roles)) {
             return;
         }
 
         // Qualquer outro é bloqueado
         wp_redirect(home_url('/app-dashboard'));
         exit;
+    }
+
+    private function should_allow_admin_request() {
+        if (wp_doing_ajax() || wp_doing_cron()) {
+            return true;
+        }
+
+        if (defined('REST_REQUEST') && REST_REQUEST) {
+            return true;
+        }
+
+        global $pagenow;
+        $allowed_pages = [
+            'admin-ajax.php',
+            'admin-post.php',
+            'async-upload.php',
+        ];
+
+        return in_array($pagenow, $allowed_pages, true);
     }
 }

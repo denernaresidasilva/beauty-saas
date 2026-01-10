@@ -32,6 +32,34 @@ class Beauty_Appointments {
             wp_send_json_error('Dados incompletos');
         }
 
+        $valid_client = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM {$wpdb->prefix}beauty_clients WHERE id = %d AND company_id = %d",
+                $client_id,
+                $company_id
+            )
+        );
+
+        $valid_professional = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM {$wpdb->prefix}beauty_professionals WHERE id = %d AND company_id = %d",
+                $professional_id,
+                $company_id
+            )
+        );
+
+        $valid_service = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM {$wpdb->prefix}beauty_services WHERE id = %d AND company_id = %d",
+                $service_id,
+                $company_id
+            )
+        );
+
+        if (!$valid_client || !$valid_professional || !$valid_service) {
+            wp_send_json_error('Dados inválidos para esta empresa');
+        }
+
         // Cria o agendamento já como confirmado
         $wpdb->insert(
             "{$wpdb->prefix}beauty_appointments",
@@ -55,15 +83,17 @@ class Beauty_Appointments {
          */
         $client_name = $wpdb->get_var(
             $wpdb->prepare(
-                "SELECT name FROM {$wpdb->prefix}beauty_clients WHERE id = %d",
-                $client_id
+                "SELECT name FROM {$wpdb->prefix}beauty_clients WHERE id = %d AND company_id = %d",
+                $client_id,
+                $company_id
             )
         );
 
         $service_name = $wpdb->get_var(
             $wpdb->prepare(
-                "SELECT name FROM {$wpdb->prefix}beauty_services WHERE id = %d",
-                $service_id
+                "SELECT name FROM {$wpdb->prefix}beauty_services WHERE id = %d AND company_id = %d",
+                $service_id,
+                $company_id
             )
         );
 
@@ -140,8 +170,28 @@ class Beauty_Appointments {
 
         global $wpdb;
 
-        $company_id      = Beauty_Company::get_company_id();
+        $company_id      = Beauty_Company::get_current_company_id();
         $professional_id = intval($_POST['professional_id'] ?? 0);
+
+        if (!$company_id) {
+            wp_send_json_error('Empresa inválida');
+        }
+
+        if (Beauty_Permissions::is_professional()) {
+            $professional_id = Beauty_Company::get_professional_id();
+        } elseif ($professional_id > 0) {
+            $valid_professional = $wpdb->get_var(
+                $wpdb->prepare(
+                    "SELECT COUNT(*) FROM {$wpdb->prefix}beauty_professionals WHERE id = %d AND company_id = %d",
+                    $professional_id,
+                    $company_id
+                )
+            );
+
+            if (!$valid_professional) {
+                wp_send_json_error('Profissional inválido');
+            }
+        }
 
         $query = "
             SELECT 
@@ -149,8 +199,8 @@ class Beauty_Appointments {
                 c.name AS client_name,
                 s.name AS service_name
             FROM {$wpdb->prefix}beauty_appointments a
-            LEFT JOIN {$wpdb->prefix}beauty_clients c ON a.client_id = c.id
-            LEFT JOIN {$wpdb->prefix}beauty_services s ON a.service_id = s.id
+            LEFT JOIN {$wpdb->prefix}beauty_clients c ON a.client_id = c.id AND c.company_id = a.company_id
+            LEFT JOIN {$wpdb->prefix}beauty_services s ON a.service_id = s.id AND s.company_id = a.company_id
             WHERE a.company_id = %d
         ";
 

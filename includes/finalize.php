@@ -40,7 +40,7 @@ class Beauty_Finalize {
         $wpdb->update(
             "{$wpdb->prefix}beauty_appointments",
             ['status' => 'finalizado'],
-            ['id' => $appointment_id]
+            ['id' => $appointment_id, 'company_id' => $company_id]
         );
 
         // Cria entrada no financeiro

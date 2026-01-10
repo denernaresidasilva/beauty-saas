@@ -107,9 +107,18 @@ class Beauty_Services {
             wp_send_json_error('ID inválido');
         }
 
-        $wpdb->delete(
-            "{$wpdb->prefix}beauty_professional_services",
-            ['service_id' => $id]
+        $wpdb->query(
+            $wpdb->prepare(
+                "DELETE ps FROM {$wpdb->prefix}beauty_professional_services ps
+                 INNER JOIN {$wpdb->prefix}beauty_professionals p ON p.id = ps.professional_id
+                 INNER JOIN {$wpdb->prefix}beauty_services s ON s.id = ps.service_id
+                 WHERE ps.service_id = %d
+                 AND p.company_id = %d
+                 AND s.company_id = %d",
+                $id,
+                $company_id,
+                $company_id
+            )
         );
 
         $wpdb->delete(
@@ -141,9 +150,29 @@ class Beauty_Services {
         $professional_id = intval($_POST['professional_id']);
         $service_id      = intval($_POST['service_id']);
         $checked         = intval($_POST['checked']);
+        $company_id      = Beauty_Company::get_company_id();
 
         if ($professional_id <= 0 || $service_id <= 0) {
             wp_send_json_error('Dados inválidos');
+        }
+
+        $valid_link = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*)
+                 FROM {$wpdb->prefix}beauty_professionals p
+                 INNER JOIN {$wpdb->prefix}beauty_services s ON s.id = %d
+                 WHERE p.id = %d
+                 AND p.company_id = %d
+                 AND s.company_id = %d",
+                $service_id,
+                $professional_id,
+                $company_id,
+                $company_id
+            )
+        );
+
+        if (!$valid_link) {
+            wp_send_json_error('Profissional ou serviço inválido');
         }
 
         if ($checked) {

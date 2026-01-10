@@ -32,7 +32,7 @@ class Beauty_Automations {
             $wpdb->prepare(
                 "SELECT a.*, m.slug AS message_slug
                  FROM {$wpdb->prefix}beauty_automations a
-                 LEFT JOIN {$wpdb->prefix}beauty_messages m ON m.id = a.message_id
+                 LEFT JOIN {$wpdb->prefix}beauty_messages m ON m.id = a.message_id AND m.company_id = a.company_id
                  WHERE a.company_id = %d
                  ORDER BY a.id DESC",
                 $company_id
@@ -64,6 +64,18 @@ class Beauty_Automations {
 
         if (!$event || !$message_id) {
             wp_send_json_error('Dados inválidos');
+        }
+
+        $message_exists = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM {$wpdb->prefix}beauty_messages WHERE id = %d AND company_id = %d",
+                $message_id,
+                $company_id
+            )
+        );
+
+        if (!$message_exists) {
+            wp_send_json_error('Mensagem inválida');
         }
 
         $data = [

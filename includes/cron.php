@@ -24,9 +24,10 @@ class Beauty_Cron {
         global $wpdb;
 
         $clients = $wpdb->get_results("
-            SELECT id, name, birthday
+            SELECT id, company_id, name, birthday
             FROM {$wpdb->prefix}beauty_clients
-            WHERE birthday IS NOT NULL
+            WHERE company_id IS NOT NULL
+            AND birthday IS NOT NULL
             AND DAY(birthday) = DAY(CURDATE())
             AND MONTH(birthday) = MONTH(CURDATE())
         ");
@@ -35,6 +36,7 @@ class Beauty_Cron {
 
             // Disparo da mensagem
             beauty_send_message('aniversario', [
+                'company_id' => $c->company_id,
                 'nome' => $c->name,
                 'data' => date('d/m')
             ]);
@@ -56,21 +58,24 @@ class Beauty_Cron {
         $rows = $wpdb->get_results("
             SELECT 
                 a.id,
+                a.company_id,
                 a.start_time,
                 c.name AS client_name,
                 s.name AS service_name
             FROM {$wpdb->prefix}beauty_appointments a
-            INNER JOIN {$wpdb->prefix}beauty_clients c ON a.client_id = c.id
-            INNER JOIN {$wpdb->prefix}beauty_services s ON a.service_id = s.id
+            INNER JOIN {$wpdb->prefix}beauty_clients c ON a.client_id = c.id AND c.company_id = a.company_id
+            INNER JOIN {$wpdb->prefix}beauty_services s ON a.service_id = s.id AND s.company_id = a.company_id
             WHERE a.start_time BETWEEN DATE_ADD(NOW(), INTERVAL 55 MINUTE)
             AND DATE_ADD(NOW(), INTERVAL 65 MINUTE)
             AND a.reminder_sent = 0
             AND a.status = 'confirmado'
+            AND a.company_id IS NOT NULL
         ");
 
         foreach ($rows as $a) {
 
             beauty_send_message('lembrete_agendamento', [
+                'company_id' => $a->company_id,
                 'nome'    => $a->client_name,
                 'servico' => $a->service_name,
                 'data'    => date('d/m/Y H:i', strtotime($a->start_time))
@@ -80,7 +85,7 @@ class Beauty_Cron {
             $wpdb->update(
                 "{$wpdb->prefix}beauty_appointments",
                 ['reminder_sent' => 1],
-                ['id' => $a->id]
+                ['id' => $a->id, 'company_id' => $a->company_id]
             );
 
             // Log
@@ -100,6 +105,7 @@ class Beauty_Cron {
         $rows = $wpdb->get_results("
             SELECT 
                 a.id,
+                a.company_id,
                 a.start_time,
                 a.end_time,
                 c.name AS client_name,
@@ -107,11 +113,12 @@ class Beauty_Cron {
                 s.followup_delay_value,
                 s.followup_delay_unit
             FROM {$wpdb->prefix}beauty_appointments a
-            INNER JOIN {$wpdb->prefix}beauty_clients c ON a.client_id = c.id
-            INNER JOIN {$wpdb->prefix}beauty_services s ON a.service_id = s.id
+            INNER JOIN {$wpdb->prefix}beauty_clients c ON a.client_id = c.id AND c.company_id = a.company_id
+            INNER JOIN {$wpdb->prefix}beauty_services s ON a.service_id = s.id AND s.company_id = a.company_id
             WHERE a.status = 'finalizado'
             AND s.followup_enabled = 1
             AND a.followup_sent = 0
+            AND a.company_id IS NOT NULL
         ");
 
         foreach ($rows as $r) {
@@ -123,6 +130,7 @@ class Beauty_Cron {
             if ($send_time <= current_time('mysql')) {
 
                 beauty_send_message('followup', [
+                    'company_id' => $r->company_id,
                     'nome'    => $r->client_name,
                     'servico' => $r->service_name,
                     'data'    => date('d/m/Y', strtotime($r->start_time))
@@ -132,7 +140,7 @@ class Beauty_Cron {
                 $wpdb->update(
                     "{$wpdb->prefix}beauty_appointments",
                     ['followup_sent' => 1],
-                    ['id' => $r->id]
+                    ['id' => $r->id, 'company_id' => $r->company_id]
                 );
 
                 // Log

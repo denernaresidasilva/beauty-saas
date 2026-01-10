@@ -15,11 +15,45 @@ class Beauty_Agenda {
      * Retorna agenda de um dia específico
      */
     public function get_day() {
+        if (!check_ajax_referer('beauty_nonce', 'nonce', false)) {
+            wp_send_json_error('Nonce inválido.');
+        }
+
+        if (Beauty_Permissions::is_company()) {
+            Beauty_Permissions::company_only();
+        } else {
+            Beauty_Permissions::professional_only();
+        }
+
         global $wpdb;
 
-        $company_id = Beauty_Company::get_company_id();
+        $company_id = Beauty_Company::get_current_company_id();
         $date       = sanitize_text_field($_POST['date']); // Y-m-d
         $professional_id = intval($_POST['professional_id']);
+
+        if (!$company_id) {
+            wp_send_json_error('Empresa inválida');
+        }
+
+        if (Beauty_Permissions::is_professional()) {
+            $professional_id = Beauty_Company::get_professional_id();
+        } else {
+            if ($professional_id <= 0) {
+                wp_send_json_error('Profissional inválido');
+            }
+
+            $valid_professional = $wpdb->get_var(
+                $wpdb->prepare(
+                    "SELECT COUNT(*) FROM {$wpdb->prefix}beauty_professionals WHERE id = %d AND company_id = %d",
+                    $professional_id,
+                    $company_id
+                )
+            );
+
+            if (!$valid_professional) {
+                wp_send_json_error('Profissional inválido');
+            }
+        }
 
         $start = $date . ' 00:00:00';
         $end   = $date . ' 23:59:59';
@@ -32,8 +66,8 @@ class Beauty_Agenda {
                     s.name AS service,
                     s.duration
                  FROM {$wpdb->prefix}beauty_appointments a
-                 LEFT JOIN {$wpdb->prefix}beauty_clients c ON c.id = a.client_id
-                 LEFT JOIN {$wpdb->prefix}beauty_services s ON s.id = a.service_id
+                 LEFT JOIN {$wpdb->prefix}beauty_clients c ON c.id = a.client_id AND c.company_id = a.company_id
+                 LEFT JOIN {$wpdb->prefix}beauty_services s ON s.id = a.service_id AND s.company_id = a.company_id
                  WHERE a.company_id = %d
                  AND a.professional_id = %d
                  AND a.start_time BETWEEN %s AND %s
@@ -52,6 +86,12 @@ class Beauty_Agenda {
      * Cria um novo agendamento
      */
     public function create() {
+        if (!check_ajax_referer('beauty_nonce', 'nonce', false)) {
+            wp_send_json_error('Nonce inválido.');
+        }
+
+        Beauty_Permissions::company_only();
+
         global $wpdb;
 
         $company_id = Beauty_Company::get_company_id();
@@ -63,11 +103,32 @@ class Beauty_Agenda {
         $time            = sanitize_text_field($_POST['time']); // H:i
         $status          = sanitize_text_field($_POST['status'] ?? 'confirmado');
 
+        $valid_client = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM {$wpdb->prefix}beauty_clients WHERE id = %d AND company_id = %d",
+                $client_id,
+                $company_id
+            )
+        );
+
+        $valid_professional = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM {$wpdb->prefix}beauty_professionals WHERE id = %d AND company_id = %d",
+                $professional_id,
+                $company_id
+            )
+        );
+
+        if (!$valid_client || !$valid_professional) {
+            wp_send_json_error('Dados inválidos para esta empresa');
+        }
+
         // Busca duração do serviço
         $service = $wpdb->get_row(
             $wpdb->prepare(
-                "SELECT duration FROM {$wpdb->prefix}beauty_services WHERE id=%d",
-                $service_id
+                "SELECT duration FROM {$wpdb->prefix}beauty_services WHERE id=%d AND company_id = %d",
+                $service_id,
+                $company_id
             )
         );
 
@@ -138,11 +199,22 @@ class Beauty_Agenda {
      * Atualiza status do agendamento
      */
     public function update_status() {
+        if (!check_ajax_referer('beauty_nonce', 'nonce', false)) {
+            wp_send_json_error('Nonce inválido.');
+        }
+
+        if (Beauty_Permissions::is_company()) {
+            Beauty_Permissions::company_only();
+        } else {
+            Beauty_Permissions::professional_only();
+        }
+
         global $wpdb;
 
-        $company_id = Beauty_Company::get_company_id();
+        $company_id = Beauty_Company::get_current_company_id();
         $id         = intval($_POST['id']);
         $status     = sanitize_text_field($_POST['status']);
+        $professional_id = Beauty_Company::get_professional_id();
 
         $allowed = ['confirmado','pendente','cancelado','faltou'];
 
@@ -150,13 +222,23 @@ class Beauty_Agenda {
             wp_send_json_error('Status inválido');
         }
 
+        if (!$company_id) {
+            wp_send_json_error('Empresa inválida');
+        }
+
+        $where = [
+            'id' => $id,
+            'company_id' => $company_id
+        ];
+
+        if (Beauty_Permissions::is_professional()) {
+            $where['professional_id'] = $professional_id;
+        }
+
         $wpdb->update(
             "{$wpdb->prefix}beauty_appointments",
             ['status' => $status],
-            [
-                'id' => $id,
-                'company_id' => $company_id
-            ]
+            $where
         );
 
         wp_send_json_success();

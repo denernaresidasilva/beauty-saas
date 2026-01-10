@@ -34,13 +34,15 @@ add_action('wp_ajax_beauty_get_message', function () {
 
     global $wpdb;
     $slug = sanitize_text_field($_POST['slug'] ?? '');
+    $company_id = Beauty_Company::get_company_id();
 
     $row = $wpdb->get_var(
         $wpdb->prepare(
             "SELECT content 
              FROM {$wpdb->prefix}beauty_messages 
-             WHERE slug = %s",
-            $slug
+             WHERE slug = %s AND company_id = %d",
+            $slug,
+            $company_id
         )
     );
 
@@ -78,7 +80,7 @@ add_action('wp_ajax_beauty_save_message', function () {
         $wpdb->update(
             "{$wpdb->prefix}beauty_messages",
             ['content' => $content],
-            ['id' => $exists]
+            ['id' => $exists, 'company_id' => $company_id]
         );
     } else {
         $wpdb->insert(

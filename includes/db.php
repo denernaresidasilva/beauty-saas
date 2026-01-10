@@ -28,6 +28,7 @@ class Beauty_DB {
             company_id BIGINT UNSIGNED NOT NULL,
             name VARCHAR(150) NOT NULL,
             phone VARCHAR(50),
+            notes TEXT NULL,
             birthday DATE NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             KEY company_id (company_id)
@@ -194,5 +195,14 @@ class Beauty_DB {
             KEY user_id (user_id),
             KEY action (action)
         ) $charset;");
+    }
+
+    public static function maybe_upgrade($version) {
+        $installed_version = get_option('beauty_saas_db_version');
+
+        if ($installed_version !== $version) {
+            self::install();
+            update_option('beauty_saas_db_version', $version);
+        }
     }
 }

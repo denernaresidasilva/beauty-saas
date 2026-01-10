@@ -1,0 +1,1 @@
+- [ ] Revisar conflitos pendentes e validar handlers de automação após o merge.

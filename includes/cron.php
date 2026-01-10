@@ -178,7 +178,7 @@ class Beauty_Cron {
 
         $rows = $wpdb->get_results(
             $wpdb->prepare(
-                "SELECT id, message_id, payload
+                "SELECT id, company_id, message_id, payload
                  FROM {$wpdb->prefix}beauty_automation_queue
                  WHERE sent_at IS NULL
                  AND send_at <= %s
@@ -197,11 +197,11 @@ class Beauty_Cron {
                 }
             }
 
-            if (function_exists('beauty_send_message')) {
-                beauty_send_message($row->message_id, $payload);
-            } else {
-                do_action('beauty_send_message', $row->message_id, $payload);
+            if (!isset($payload['company_id'])) {
+                $payload['company_id'] = (int) $row->company_id;
             }
+
+            do_action('beauty_send_message', $row->message_id, $payload);
 
             $wpdb->update(
                 "{$wpdb->prefix}beauty_automation_queue",

@@ -24,8 +24,17 @@ add_action('rest_api_init', function () {
         },
         'callback' => function () {
             global $wpdb;
+            $company_id = Beauty_Company::get_company_id();
+
+            if (!$company_id) {
+                return new WP_Error('forbidden', 'Permissão insuficiente.', ['status' => 403]);
+            }
+
             return $wpdb->get_results(
-                "SELECT * FROM {$wpdb->prefix}beauty_appointments"
+                $wpdb->prepare(
+                    "SELECT * FROM {$wpdb->prefix}beauty_appointments WHERE company_id = %d",
+                    $company_id
+                )
             );
         }
     ]);

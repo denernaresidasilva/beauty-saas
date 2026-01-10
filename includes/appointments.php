@@ -1,4 +1,12 @@
-@@ -10,82 +10,112 @@ class Beauty_Appointments {
+<?php
+if (!defined('ABSPATH')) exit;
+
+class Beauty_Appointments {
+
+    public function __construct() {
+        add_action('wp_ajax_beauty_create_appointment', [$this, 'create']);
+        add_action('wp_ajax_beauty_cancel_appointment', [$this, 'cancel']);
+        add_action('wp_ajax_beauty_get_appointments', [$this, 'list']);
     }
 
     /**
@@ -22,6 +30,10 @@
 
         if (!$client_id || !$professional_id || !$service_id || !$start_time || !$end_time) {
             wp_send_json_error('Dados incompletos');
+        }
+
+        if (strtotime($end_time) <= strtotime($start_time)) {
+            wp_send_json_error('Horário inválido');
         }
 
         $valid_client = $wpdb->get_var(
@@ -52,6 +64,24 @@
             wp_send_json_error('Dados inválidos para esta empresa');
         }
 
+        $conflict_statuses = apply_filters('beauty_appointment_conflict_statuses', ['confirmado', 'pendente']);
+        $placeholders = implode(',', array_fill(0, count($conflict_statuses), '%s'));
+
+        $conflict_count = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM {$wpdb->prefix}beauty_appointments
+                 WHERE company_id = %d
+                   AND professional_id = %d
+                   AND status IN ($placeholders)
+                   AND NOT (end_time <= %s OR start_time >= %s)",
+                array_merge([$company_id, $professional_id], $conflict_statuses, [$start_time, $end_time])
+            )
+        );
+
+        if ($conflict_count) {
+            wp_send_json_error('Conflito de horário para este profissional');
+        }
+
         // Cria o agendamento já como confirmado
         $wpdb->insert(
             "{$wpdb->prefix}beauty_appointments",
@@ -75,8 +105,6 @@
          */
         $client_name = $wpdb->get_var(
             $wpdb->prepare(
-                "SELECT name FROM {$wpdb->prefix}beauty_clients WHERE id = %d",
-                $client_id
                 "SELECT name FROM {$wpdb->prefix}beauty_clients WHERE id = %d AND company_id = %d",
                 $client_id,
                 $company_id
@@ -85,8 +113,6 @@
 
         $service_name = $wpdb->get_var(
             $wpdb->prepare(
-                "SELECT name FROM {$wpdb->prefix}beauty_services WHERE id = %d",
-                $service_id
                 "SELECT name FROM {$wpdb->prefix}beauty_services WHERE id = %d AND company_id = %d",
                 $service_id,
                 $company_id
@@ -97,9 +123,10 @@
          * 📩 DISPARO: confirmação de agendamento
          */
         beauty_send_message('confirmacao_agendamento', [
-            'nome'    => $client_name,
-            'servico' => $service_name,
-            'data'    => date('d/m/Y H:i', strtotime($start_time))
+            'company_id' => $company_id,
+            'nome'       => $client_name,
+            'servico'    => $service_name,
+            'data'       => date('d/m/Y H:i', strtotime($start_time))
         ]);
 
         /**
@@ -115,7 +142,32 @@
         ]);
     }
 
-@@ -118,57 +148,77 @@ class Beauty_Appointments {
+    /**
+     * Cancelar agendamento
+     */
+    public function cancel() {
+        if (!check_ajax_referer('beauty_nonce', 'nonce', false)) {
+            wp_send_json_error('Nonce inválido.');
+        }
+
+        Beauty_Permissions::company_only(); // 🔒 Apenas empresa
+
+        global $wpdb;
+        $appointment_id = intval($_POST['id']);
+        $company_id     = Beauty_Company::get_company_id();
+
+        if ($appointment_id <= 0) {
+            wp_send_json_error('ID inválido');
+        }
+
+        $wpdb->update(
+            "{$wpdb->prefix}beauty_appointments",
+            ['status' => 'cancelado'],
+            ['id' => $appointment_id, 'company_id' => $company_id]
+        );
+
+        /**
+         * 📝 LOG
          */
         beauty_log(
             'agendamento_cancelado',
@@ -141,7 +193,6 @@
 
         global $wpdb;
 
-        $company_id      = Beauty_Company::get_company_id();
         $company_id      = Beauty_Company::get_current_company_id();
         $professional_id = intval($_POST['professional_id'] ?? 0);
 
@@ -171,8 +222,6 @@
                 c.name AS client_name,
                 s.name AS service_name
             FROM {$wpdb->prefix}beauty_appointments a
-            LEFT JOIN {$wpdb->prefix}beauty_clients c ON a.client_id = c.id
-            LEFT JOIN {$wpdb->prefix}beauty_services s ON a.service_id = s.id
             LEFT JOIN {$wpdb->prefix}beauty_clients c ON a.client_id = c.id AND c.company_id = a.company_id
             LEFT JOIN {$wpdb->prefix}beauty_services s ON a.service_id = s.id AND s.company_id = a.company_id
             WHERE a.company_id = %d

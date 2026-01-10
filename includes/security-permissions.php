@@ -39,6 +39,32 @@ class Beauty_Permissions {
     }
 
     /**
+     * Verifica se é contador
+     */
+    public static function is_accountant() {
+        if (!is_user_logged_in()) {
+            return false;
+        }
+
+        $user = wp_get_current_user();
+
+        return in_array('beauty_accountant', (array) $user->roles, true);
+    }
+
+    /**
+     * Garante acesso a relatórios financeiros
+     */
+    public static function financial_read_only() {
+        if (!is_user_logged_in()) {
+            wp_die('Acesso negado.');
+        }
+
+        if (!self::is_company() && !self::is_accountant()) {
+            wp_die('Permissão insuficiente.');
+        }
+    }
+
+    /**
      * Garante que apenas profissional acesse
      */
     public static function professional_only() {

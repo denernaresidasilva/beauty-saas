@@ -142,7 +142,21 @@ class Beauty_Automations {
 
             // Delay (em dias)
             if ($automation->delay_days > 0) {
-                // aqui futuramente entra cron / fila
+                $send_at = date(
+                    'Y-m-d H:i:s',
+                    current_time('timestamp') + ($automation->delay_days * DAY_IN_SECONDS)
+                );
+
+                $wpdb->insert(
+                    "{$wpdb->prefix}beauty_automation_queue",
+                    [
+                        'company_id'    => $company_id,
+                        'automation_id' => $automation->id,
+                        'message_id'    => $automation->message_id,
+                        'payload'       => wp_json_encode($context),
+                        'send_at'       => $send_at,
+                    ]
+                );
                 continue;
             }
 

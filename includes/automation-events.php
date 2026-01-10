@@ -13,6 +13,7 @@ class Beauty_AutomationEvents {
      * Lista automações da empresa
      */
     public function get() {
+        check_ajax_referer('beauty_nonce', 'nonce');
         Beauty_Permissions::company_only();
 
         global $wpdb;
@@ -37,6 +38,7 @@ class Beauty_AutomationEvents {
      * Cria ou edita automação
      */
     public function save() {
+        check_ajax_referer('beauty_nonce', 'nonce');
         Beauty_Permissions::company_only();
 
         global $wpdb;
@@ -87,6 +89,7 @@ class Beauty_AutomationEvents {
      * Exclui automação
      */
     public function delete() {
+        check_ajax_referer('beauty_nonce', 'nonce');
         Beauty_Permissions::company_only();
 
         global $wpdb;

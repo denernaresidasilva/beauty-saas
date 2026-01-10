@@ -36,6 +36,7 @@ class Beauty_Core {
         require_once $base . 'messages.php';
         require_once $base . 'messages-api.php';
         require_once $base . 'automation-events.php';
+        require_once $base . 'automations.php';
         require_once $base . 'cron.php';
         require_once $base . 'logs.php';
         require_once $base . 'export.php';
